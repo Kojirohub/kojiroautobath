@@ -4,7 +4,6 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
-local DETECT_RANGE = 7
 
 if LocalPlayer.PlayerGui:FindFirstChild("AutoBatGui") then
     LocalPlayer.PlayerGui.AutoBatGui:Destroy()
@@ -31,8 +30,8 @@ local GREEN  = Color3.fromRGB(40, 220, 120)
 local WHITE  = Color3.fromRGB(255, 255, 255)
 
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 200, 0, 120)
-main.Position = UDim2.new(0.5, -100, 0.5, -60)
+main.Size = UDim2.new(0, 200, 0, 155)
+main.Position = UDim2.new(0.5, -100, 0.5, -77)
 main.BackgroundColor3 = BG
 main.BackgroundTransparency = 0.25
 main.BorderSizePixel = 0
@@ -115,6 +114,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- AUTO BAT TOGGLE
 local toggle = Instance.new("Frame")
 toggle.Size = UDim2.new(0, 172, 0, 36)
 toggle.Position = UDim2.new(0.5, -86, 0, 42)
@@ -161,9 +161,70 @@ knob.ZIndex = 7
 knob.Parent = track
 Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
+local click = Instance.new("TextButton")
+click.Size = UDim2.new(1, 0, 1, 0)
+click.BackgroundTransparency = 1
+click.Text = ""
+click.ZIndex = 10
+click.Parent = toggle
+
+-- BODY TRACK TOGGLE
+local trackToggle = Instance.new("Frame")
+trackToggle.Size = UDim2.new(0, 172, 0, 36)
+trackToggle.Position = UDim2.new(0.5, -86, 0, 84)
+trackToggle.BackgroundColor3 = PANEL
+trackToggle.BackgroundTransparency = 0.45
+trackToggle.BorderSizePixel = 0
+trackToggle.ZIndex = 5
+trackToggle.Parent = main
+Instance.new("UICorner", trackToggle).CornerRadius = UDim.new(0, 10)
+
+local trackStroke = Instance.new("UIStroke")
+trackStroke.Color = ACCENT
+trackStroke.Thickness = 1
+trackStroke.Transparency = 0.7
+trackStroke.Parent = trackToggle
+
+local trackLabel = Instance.new("TextLabel")
+trackLabel.Size = UDim2.new(1, -55, 1, 0)
+trackLabel.Position = UDim2.new(0, 12, 0, 0)
+trackLabel.BackgroundTransparency = 1
+trackLabel.Text = "Body Trace"
+trackLabel.TextColor3 = MUTED
+trackLabel.Font = Enum.Font.GothamBold
+trackLabel.TextSize = 11
+trackLabel.TextXAlignment = Enum.TextXAlignment.Left
+trackLabel.ZIndex = 6
+trackLabel.Parent = trackToggle
+
+local trackTrack = Instance.new("Frame")
+trackTrack.Size = UDim2.new(0, 36, 0, 20)
+trackTrack.Position = UDim2.new(1, -46, 0.5, -10)
+trackTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+trackTrack.BorderSizePixel = 0
+trackTrack.ZIndex = 6
+trackTrack.Parent = trackToggle
+Instance.new("UICorner", trackTrack).CornerRadius = UDim.new(1, 0)
+
+local trackKnob = Instance.new("Frame")
+trackKnob.Size = UDim2.new(0, 14, 0, 14)
+trackKnob.Position = UDim2.new(0, 3, 0.5, -7)
+trackKnob.BackgroundColor3 = MUTED
+trackKnob.BorderSizePixel = 0
+trackKnob.ZIndex = 7
+trackKnob.Parent = trackTrack
+Instance.new("UICorner", trackKnob).CornerRadius = UDim.new(1, 0)
+
+local trackClick = Instance.new("TextButton")
+trackClick.Size = UDim2.new(1, 0, 1, 0)
+trackClick.BackgroundTransparency = 1
+trackClick.Text = ""
+trackClick.ZIndex = 10
+trackClick.Parent = trackToggle
+
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(0, 172, 0, 22)
-status.Position = UDim2.new(0.5, -86, 0, 82)
+status.Position = UDim2.new(0.5, -86, 0, 126)
 status.BackgroundTransparency = 1
 status.Text = "Status: Off"
 status.TextColor3 = MUTED
@@ -183,50 +244,14 @@ watermark.TextSize = 10
 watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
 
-local click = Instance.new("TextButton")
-click.Size = UDim2.new(1, 0, 1, 0)
-click.BackgroundTransparency = 1
-click.Text = ""
-click.ZIndex = 10
-click.Parent = toggle
-
 -- ============================================================
--- DETECTION + AUTO BAT LOGIC
+-- AUTO BAT LOGIC
 -- ============================================================
 local autoBatConnection = nil
-local enabled = false
-
-local function isPlayerNearby()
-    local char = LocalPlayer.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local otherHRP = p.Character:FindFirstChild("HumanoidRootPart")
-            local otherHum = p.Character:FindFirstChildOfClass("Humanoid")
-            if otherHRP and otherHum and otherHum.Health > 0 then
-                local dist = (otherHRP.Position - hrp.Position).Magnitude
-                if dist <= DETECT_RANGE then
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
+local batEnabled = false
 
 local function enableAutoBat()
     autoBatConnection = RunService.RenderStepped:Connect(function()
-        if not isPlayerNearby() then
-            status.Text = "Waiting..."
-            status.TextColor3 = MUTED
-            return
-        end
-
-        status.Text = "Swinging!"
-        status.TextColor3 = ACCENT
-
         local character = LocalPlayer.Character
         if not character then return end
         local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -245,11 +270,11 @@ local function disableAutoBat()
     end
 end
 
-local function setEnabled(v)
-    enabled = v
+local function setBatEnabled(v)
+    batEnabled = v
     if v then
-        status.Text = "Waiting..."
-        status.TextColor3 = MUTED
+        status.Text = "Bat: Active"
+        status.TextColor3 = GREEN
         tw(track, fast, {BackgroundColor3 = ACCENT})
         tw(knob, fast, {Position = UDim2.new(1, -17, 0.5, -7), BackgroundColor3 = WHITE})
         tw(label, fast, {TextColor3 = WHITE})
@@ -271,14 +296,130 @@ local function setEnabled(v)
 end
 
 click.MouseButton1Click:Connect(function()
-    setEnabled(not enabled)
+    setBatEnabled(not batEnabled)
+end)
+
+-- ============================================================
+-- BODY TRACE LOGIC
+-- ============================================================
+local bodyTraceEnabled = false
+local bodyTraceConn = nil
+local lookAttach = nil
+local lookAlign = nil
+
+local function getNearestPlayer()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    local nearest, dist = nil, math.huge
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local otherHRP = p.Character:FindFirstChild("HumanoidRootPart")
+            local otherHum = p.Character:FindFirstChildOfClass("Humanoid")
+            if otherHRP and otherHum and otherHum.Health > 0 then
+                local d = (otherHRP.Position - hrp.Position).Magnitude
+                if d < dist then
+                    nearest = otherHRP
+                    dist = d
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+local function enableBodyTrace()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    hum.AutoRotate = false
+
+    lookAttach = Instance.new("Attachment")
+    lookAttach.Parent = hrp
+
+    lookAlign = Instance.new("AlignOrientation")
+    lookAlign.Attachment0 = lookAttach
+    lookAlign.Mode = Enum.OrientationAlignmentMode.OneAttachment
+    lookAlign.RigidityEnabled = true
+    lookAlign.MaxTorque = math.huge
+    lookAlign.Responsiveness = 200
+    lookAlign.Parent = hrp
+
+    bodyTraceConn = RunService.RenderStepped:Connect(function()
+        if not bodyTraceEnabled then return end
+        local c = LocalPlayer.Character
+        if not c then return end
+        local r = c:FindFirstChild("HumanoidRootPart")
+        if not r then return end
+        local target = getNearestPlayer()
+        if not target then
+            if lookAlign then lookAlign.Enabled = false end
+            return
+        end
+        local lookPos = Vector3.new(target.Position.X, r.Position.Y, target.Position.Z)
+        if lookAlign then
+            lookAlign.Enabled = true
+            lookAlign.CFrame = CFrame.lookAt(r.Position, lookPos)
+        end
+    end)
+end
+
+local function disableBodyTrace()
+    if bodyTraceConn then
+        bodyTraceConn:Disconnect()
+        bodyTraceConn = nil
+    end
+    if lookAlign then lookAlign:Destroy(); lookAlign = nil end
+    if lookAttach then lookAttach:Destroy(); lookAttach = nil end
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.AutoRotate = true end
+    end
+end
+
+local function setTrackEnabled(v)
+    bodyTraceEnabled = v
+    if v then
+        tw(trackTrack, fast, {BackgroundColor3 = ACCENT})
+        tw(trackKnob, fast, {Position = UDim2.new(1, -17, 0.5, -7), BackgroundColor3 = WHITE})
+        tw(trackLabel, fast, {TextColor3 = WHITE})
+        tw(trackStroke, fast, {Transparency = 0.2})
+        status.Text = "Tracing..."
+        status.TextColor3 = ACCENT
+        enableBodyTrace()
+    else
+        tw(trackTrack, fast, {BackgroundColor3 = Color3.fromRGB(30, 30, 50)})
+        tw(trackKnob, fast, {Position = UDim2.new(0, 3, 0.5, -7), BackgroundColor3 = MUTED})
+        tw(trackLabel, fast, {TextColor3 = MUTED})
+        tw(trackStroke, fast, {Transparency = 0.7})
+        if not batEnabled then
+            status.Text = "Status: Off"
+            status.TextColor3 = MUTED
+        end
+        disableBodyTrace()
+    end
+end
+
+trackClick.MouseButton1Click:Connect(function()
+    setTrackEnabled(not bodyTraceEnabled)
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if bodyTraceEnabled then
+        task.wait(0.5)
+        disableBodyTrace()
+        enableBodyTrace()
+    end
 end)
 
 task.spawn(function()
     while true do
-        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = enabled and 0.05 or 0.55})
+        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = batEnabled and 0.05 or 0.55})
         task.wait(1.5)
-        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = enabled and 0.3 or 0.7})
+        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = batEnabled and 0.3 or 0.7})
         task.wait(1.5)
     end
 end)
