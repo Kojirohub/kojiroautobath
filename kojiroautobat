@@ -258,77 +258,42 @@ local function getClosestPlayer()
     return closest, distance
 end
 -- Body trace FIXED
-local RunService = game:GetService("RunService")
-
 local bodyTraceEnabled = false
 local bodyTraceConn
-
-local SMOOTH_SPEED = 6
-
-local function getClosestPlayer()
-    if not hrp then return nil end
-
-    local closest
-    local dist = math.huge
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local root = p.Character:FindFirstChild("HumanoidRootPart")
-            local hum = p.Character:FindFirstChild("Humanoid")
-
-            if root and hum and hum.Health > 0 then
-                local d = (hrp.Position - root.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    closest = root
-                end
-            end
-        end
-    end
-
-    return closest
-end
-
 local function disableBodyTrace()
     if bodyTraceConn then
         bodyTraceConn:Disconnect()
         bodyTraceConn = nil
     end
-
     if hum then
         hum.AutoRotate = true
     end
 end
-
 local function enableBodyTrace()
     disableBodyTrace()
-
-    if not hrp or not hum then return end
-
+    if not hrp or not hum then
+        return
+    end
     hum.AutoRotate = false
-
-    bodyTraceConn = RunService.RenderStepped:Connect(function(dt)
-        if not bodyTraceEnabled then return end
-
+    bodyTraceConn = RunService.RenderStepped:Connect(function()
+        if not bodyTraceEnabled then
+            return
+        end
         local target = getClosestPlayer()
-        if not target then return end
-
-        -- flat look (no tilt)
-        local targetPos = Vector3.new(
-            target.Position.X,
-            hrp.Position.Y,
-            target.Position.Z
-        )
-
-        local goal = CFrame.lookAt(hrp.Position, targetPos)
-
-        -- smooth, frame-rate independent interpolation
-        local alpha = 1 - math.exp(-SMOOTH_SPEED * dt)
-
-        local newCF = hrp.CFrame:Lerp(goal, alpha)
-
-        -- IMPORTANT: lock position so it never drifts
-        hrp.CFrame = CFrame.new(hrp.Position) * (newCF - newCF.Position)
+        if target and target.Character then
+            local enemyHRP = target.Character:FindFirstChild("HumanoidRootPart")
+            if enemyHRP then
+                local direction = (
+                    Vector3.new(
+                        enemyHRP.Position.X,
+                        hrp.Position.Y,
+                        enemyHRP.Position.Z
+                    ) - hrp.Position
+                ).Unit
+                -- SAFE ROTATION METHOD
+                hum:Move(direction, false)
+            end
+        end
     end)
 end
 -- States
