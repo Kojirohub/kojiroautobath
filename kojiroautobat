@@ -246,7 +246,7 @@ watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
 
 -- ============================================================
--- BAT LOGIC (from vexul hub - undetected method)
+-- BAT LOGIC 
 -- ============================================================
 local hittingCooldown = false
 local hrp = nil
