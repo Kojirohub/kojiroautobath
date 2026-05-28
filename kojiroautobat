@@ -150,8 +150,9 @@ track.Position = UDim2.new(1, -46, 0.5, -10)
 track.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
 track.BorderSizePixel = 0
 track.ZIndex = 6
-track.Parent = toggle
+track.Parent = track
 Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+track.Parent = toggle
 
 local knob = Instance.new("Frame")
 knob.Size = UDim2.new(0, 14, 0, 14)
@@ -275,6 +276,7 @@ end
 
 local function tryHitBat()
     if hittingCooldown then return end
+    if not autoBatEnabled then return end
     hittingCooldown = true
     pcall(function()
         local bat = getBat()
@@ -293,7 +295,8 @@ local function getClosestPlayer()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             local tr = p.Character:FindFirstChild("HumanoidRootPart")
-            if tr then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if tr and hum and hum.Health > 0 then
                 local d = (hrp.Position - tr.Position).Magnitude
                 if d < cd then cd = d cp = p end
             end
@@ -303,7 +306,7 @@ local function getClosestPlayer()
 end
 
 -- ============================================================
--- BODY TRACE LOGIC
+-- SMOOTH BODY TRACE LOGIC
 -- ============================================================
 local bodyTraceEnabled = false
 local bodyTraceConn = nil
@@ -345,9 +348,12 @@ local function enableBodyTrace()
     lookAlign = Instance.new("AlignOrientation")
     lookAlign.Attachment0 = lookAttach
     lookAlign.Mode = Enum.OrientationAlignmentMode.OneAttachment
-    lookAlign.RigidityEnabled = true
-    lookAlign.MaxTorque = math.huge
-    lookAlign.Responsiveness = 200
+    
+    -- Smooth settings instead of instant locking:
+    lookAlign.RigidityEnabled = false
+    lookAlign.MaxTorque = 1500000 -- Strong enough to rotate, weak enough to blend
+    lookAlign.MaxAngularVelocity = 25 -- Human-like speed limit (decrease to slow down tracking)
+    lookAlign.Responsiveness = 18 -- Elastic damping feel (higher = snappier, lower = smoother)
     lookAlign.Parent = root
 
     bodyTraceConn = RunService.RenderStepped:Connect(function()
@@ -356,11 +362,13 @@ local function enableBodyTrace()
         if not c then return end
         local r = c:FindFirstChild("HumanoidRootPart")
         if not r then return end
+        
         local target = getNearestPlayer()
         if not target then
             if lookAlign then lookAlign.Enabled = false end
             return
         end
+        
         local lookPos = Vector3.new(target.Position.X, r.Position.Y, target.Position.Z)
         if lookAlign then
             lookAlign.Enabled = true
@@ -383,7 +391,7 @@ end
 -- ============================================================
 -- AUTO BAT HEARTBEAT
 -- ============================================================
-local autoBatEnabled = false
+autoBatEnabled = false
 
 RunService.Heartbeat:Connect(function()
     if not autoBatEnabled then return end
