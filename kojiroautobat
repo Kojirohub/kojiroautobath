@@ -1,4 +1,4 @@
-local Players = game:GetService("Players")
+Local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -246,7 +246,7 @@ watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
 
 -- ============================================================
--- BAT LOGIC
+-- BAT LOGIC (from vexul hub - undetected method)
 -- ============================================================
 local hittingCooldown = false
 local hrp = nil
@@ -303,23 +303,23 @@ local function getClosestPlayer()
 end
 
 -- ============================================================
--- BODY TRACE LOGIC (Lerp Smoothing)
+-- FIXED BODY TRACE LOGIC
 -- ============================================================
 local bodyTraceEnabled = false
 local bodyTraceConn = nil
-local ROTATION_SPEED = 0.15 
+local ROTATION_SPEED = 0.15 -- Adjust this (0.05 to 0.2 is usually safe)
 
 local function getNearestPlayer()
     local char = LocalPlayer.Character
     if not char then return nil end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
+    
     local nearest, dist = nil, math.huge
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             local otherHRP = p.Character:FindFirstChild("HumanoidRootPart")
-            local otherHum = p.Character:FindFirstChildOfClass("Humanoid")
-            if otherHRP and otherHum and otherHum.Health > 0 then
+            if otherHRP and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
                 local d = (otherHRP.Position - root.Position).Magnitude
                 if d < dist then
                     nearest = otherHRP
@@ -334,29 +334,43 @@ end
 local function enableBodyTrace()
     local char = LocalPlayer.Character
     if not char then return end
-    local root = char:WaitForChild("HumanoidRootPart")
-    local hum = char:WaitForChild("Humanoid")
-    hum.AutoRotate = false
-
-    bodyTraceConn = RunService.RenderStepped:Connect(function(dt)
-        if not bodyTraceEnabled then return end
-        local target = getNearestPlayer()
-        if not target then return end
-
-        local targetPos = Vector3.new(target.Position.X, root.Position.Y, target.Position.Z)
-        local lookCFrame = CFrame.lookAt(root.Position, targetPos)
-        root.CFrame = root.CFrame:Lerp(lookCFrame, ROTATION_SPEED)
-    end)
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    
+    if root and hum then
+        hum.AutoRotate = false -- Disable default rotation so we can control it
+        
+        bodyTraceConn = RunService.RenderStepped:Connect(function()
+            if not bodyTraceEnabled then return end
+            
+            local target = getNearestPlayer()
+            if target then
+                -- Calculate direction to target
+                local targetPos = Vector3.new(target.Position.X, root.Position.Y, target.Position.Z)
+                local lookCFrame = CFrame.lookAt(root.Position, targetPos)
+                
+                -- Smoothly interpolate (Lerp) to avoid jitter/physics-breaking snaps
+                root.CFrame = root.CFrame:Lerp(lookCFrame, ROTATION_SPEED)
+            end
+        end)
+    end
 end
 
 local function disableBodyTrace()
-    if bodyTraceConn then bodyTraceConn:Disconnect(); bodyTraceConn = nil end
+    if bodyTraceConn then 
+        bodyTraceConn:Disconnect() 
+        bodyTraceConn = nil 
+    end
+    
     local char = LocalPlayer.Character
     if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.AutoRotate = true end
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then 
+            hum.AutoRotate = true -- Always re-enable this so you don't get stuck
+        end
     end
 end
+
 
 -- ============================================================
 -- AUTO BAT HEARTBEAT
@@ -368,13 +382,7 @@ RunService.Heartbeat:Connect(function()
     if not hrp then return end
     local target, dist = getClosestPlayer()
     if target and target.Character then
-        local tr = target.Character:FindFirstChild("HumanoidRootPart")
-        if tr then
-            local fp = tr.Position + tr.CFrame.LookVector * 1.5
-            local dir = (fp - hrp.Position).Unit
-            hrp.AssemblyLinearVelocity = Vector3.new(dir.X * 56.5, dir.Y * 56.5, dir.Z * 56.5)
-            if dist <= DETECT_RANGE then tryHitBat() end
-        end
+        if dist <= DETECT_RANGE then tryHitBat() end
     end
 end)
 
