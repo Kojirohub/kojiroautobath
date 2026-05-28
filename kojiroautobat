@@ -1,3 +1,4 @@
+-- Force local lowercase
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -6,19 +7,23 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local DETECT_RANGE = 7
 
-if LocalPlayer.PlayerGui:FindFirstChild("AutoBatGui") then
-    LocalPlayer.PlayerGui.AutoBatGui:Destroy()
-end
+-- Ensure Player and GUI exist
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then return end
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local gui = Instance.new("ScreenGui")
+-- Clean up any old versions
+local oldGui = PlayerGui:FindFirstChild("AutoBatGui")
+if oldGui then oldGui:Destroy() end
+
+-- Create new GUI
+local gui = Instance.new("ScreenGui", PlayerGui)
 gui.Name = "AutoBatGui"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local function tw(obj, info, props)
-    TweenService:Create(obj, info, props):Play()
-end
+print("Kojiro Hub Initialized Successfully")
+
 
 local fast = TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
