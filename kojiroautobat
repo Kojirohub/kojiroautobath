@@ -1,120 +1,98 @@
--- Force local lowercase
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-
 local LocalPlayer = Players.LocalPlayer
-local DETECT_RANGE = 7
-
 if not LocalPlayer then return end
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- Remove old GUI
-local oldGui = PlayerGui:FindFirstChild("AutoBatGui")
-if oldGui then
-    oldGui:Destroy()
+local DETECT_RANGE = 7
+-- Remove old gui
+local old = PlayerGui:FindFirstChild("AutoBatGui")
+if old then
+    old:Destroy()
 end
-
--- GUI
+-- Gui
 local gui = Instance.new("ScreenGui")
 gui.Name = "AutoBatGui"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = PlayerGui
-
-print("Kojiro Hub Initialized Successfully")
-
+print("Kojiro Hub Loaded")
 -- Tween helper
 local function tw(obj, info, props)
     if obj then
         TweenService:Create(obj, info, props):Play()
     end
 end
-
 local fast = TweenInfo.new(
     0.15,
     Enum.EasingStyle.Quint,
     Enum.EasingDirection.Out
 )
-
 -- Colors
-local BG     = Color3.fromRGB(8, 8, 14)
-local PANEL  = Color3.fromRGB(14, 14, 24)
-local ACCENT = Color3.fromRGB(255, 180, 0)
-local TEXT   = Color3.fromRGB(230, 230, 255)
-local MUTED  = Color3.fromRGB(120, 120, 160)
-local GREEN  = Color3.fromRGB(40, 220, 120)
-local WHITE  = Color3.fromRGB(255, 255, 255)
-
--- Main frame
+local BG = Color3.fromRGB(8,8,14)
+local PANEL = Color3.fromRGB(14,14,24)
+local ACCENT = Color3.fromRGB(255,180,0)
+local TEXT = Color3.fromRGB(230,230,255)
+local MUTED = Color3.fromRGB(120,120,160)
+local GREEN = Color3.fromRGB(40,220,120)
+local WHITE = Color3.fromRGB(255,255,255)
+-- Main
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 200, 0, 155)
-main.Position = UDim2.new(0.5, -100, 0.5, -77)
+main.Size = UDim2.new(0,200,0,155)
+main.Position = UDim2.new(0.5,-100,0.5,-77)
 main.BackgroundColor3 = BG
 main.BackgroundTransparency = 0.25
 main.BorderSizePixel = 0
 main.Active = true
 main.Parent = gui
-
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
-
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
 local mainStroke = Instance.new("UIStroke")
 mainStroke.Color = ACCENT
 mainStroke.Thickness = 1.2
 mainStroke.Transparency = 0.4
 mainStroke.Parent = main
-
 -- Topbar
 local topbar = Instance.new("Frame")
-topbar.Size = UDim2.new(1, 0, 0, 36)
+topbar.Size = UDim2.new(1,0,0,36)
 topbar.BackgroundColor3 = PANEL
 topbar.BackgroundTransparency = 0.3
 topbar.BorderSizePixel = 0
 topbar.Parent = main
-
-Instance.new("UICorner", topbar).CornerRadius = UDim.new(0, 14)
-
+Instance.new("UICorner", topbar).CornerRadius = UDim.new(0,14)
 local topFix = Instance.new("Frame")
-topFix.Size = UDim2.new(1, 0, 0.5, 0)
-topFix.Position = UDim2.new(0, 0, 0.5, 0)
+topFix.Size = UDim2.new(1,0,0.5,0)
+topFix.Position = UDim2.new(0,0,0.5,0)
 topFix.BackgroundColor3 = PANEL
 topFix.BackgroundTransparency = 0.3
 topFix.BorderSizePixel = 0
 topFix.Parent = topbar
-
 local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 7, 0, 7)
-dot.Position = UDim2.new(0, 12, 0.5, -3)
-dot.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+dot.Size = UDim2.new(0,7,0,7)
+dot.Position = UDim2.new(0,12,0.5,-3)
+dot.BackgroundColor3 = Color3.fromRGB(60,60,80)
 dot.BorderSizePixel = 0
 dot.Parent = topbar
-
-Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-
+Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 1, 0)
+title.Size = UDim2.new(1,0,1,0)
 title.BackgroundTransparency = 1
 title.Text = "AUTO BAT"
 title.TextColor3 = TEXT
 title.Font = Enum.Font.GothamBold
 title.TextSize = 11
 title.Parent = topbar
-
 -- Dragging
 local dragging = false
 local dragInput
 local dragStart
 local startPos
-
 topbar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
-
         dragging = true
         dragStart = input.Position
         startPos = main.Position
-
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -122,18 +100,15 @@ topbar.InputBegan:Connect(function(input)
         end)
     end
 end)
-
 topbar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input == dragInput then
         local delta = input.Position - dragStart
-
         main.Position = UDim2.new(
             startPos.X.Scale,
             startPos.X.Offset + delta.X,
@@ -142,67 +117,51 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
-
 -- Toggle creator
-local function createToggle(yPos, text)
+local function createToggle(y, text)
     local holder = Instance.new("Frame")
-    holder.Size = UDim2.new(0, 172, 0, 36)
-    holder.Position = UDim2.new(0.5, -86, 0, yPos)
+    holder.Size = UDim2.new(0,172,0,36)
+    holder.Position = UDim2.new(0.5,-86,0,y)
     holder.BackgroundColor3 = PANEL
     holder.BackgroundTransparency = 0.45
     holder.BorderSizePixel = 0
-    holder.ZIndex = 5
     holder.Parent = main
-
-    Instance.new("UICorner", holder).CornerRadius = UDim.new(0, 10)
-
+    Instance.new("UICorner", holder).CornerRadius = UDim.new(0,10)
     local stroke = Instance.new("UIStroke")
     stroke.Color = ACCENT
     stroke.Thickness = 1
     stroke.Transparency = 0.7
     stroke.Parent = holder
-
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -55, 1, 0)
-    label.Position = UDim2.new(0, 12, 0, 0)
+    label.Size = UDim2.new(1,-55,1,0)
+    label.Position = UDim2.new(0,12,0,0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = MUTED
     label.Font = Enum.Font.GothamBold
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 6
     label.Parent = holder
-
     local track = Instance.new("Frame")
-    track.Size = UDim2.new(0, 36, 0, 20)
-    track.Position = UDim2.new(1, -46, 0.5, -10)
-    track.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    track.Size = UDim2.new(0,36,0,20)
+    track.Position = UDim2.new(1,-46,0.5,-10)
+    track.BackgroundColor3 = Color3.fromRGB(30,30,50)
     track.BorderSizePixel = 0
-    track.ZIndex = 6
     track.Parent = holder
-
-    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
-
+    Instance.new("UICorner", track).CornerRadius = UDim.new(1,0)
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = UDim2.new(0, 3, 0.5, -7)
+    knob.Size = UDim2.new(0,14,0,14)
+    knob.Position = UDim2.new(0,3,0.5,-7)
     knob.BackgroundColor3 = MUTED
     knob.BorderSizePixel = 0
-    knob.ZIndex = 7
     knob.Parent = track
-
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 1, 0)
+    button.Size = UDim2.new(1,0,1,0)
     button.BackgroundTransparency = 1
     button.Text = ""
-    button.ZIndex = 10
     button.Parent = holder
-
     return {
-        Holder = holder,
         Stroke = stroke,
         Label = label,
         Track = track,
@@ -210,116 +169,85 @@ local function createToggle(yPos, text)
         Button = button
     }
 end
-
-local autoBatUI = createToggle(42, "Auto Bat")
-local bodyTraceUI = createToggle(84, "Body Trace")
-
+local autoUI = createToggle(42, "Auto Bat")
+local traceUI = createToggle(84, "Body Trace")
 -- Status
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(0, 172, 0, 22)
-status.Position = UDim2.new(0.5, -86, 0, 126)
+status.Size = UDim2.new(0,172,0,22)
+status.Position = UDim2.new(0.5,-86,0,126)
 status.BackgroundTransparency = 1
 status.Text = "Status: OFF"
 status.TextColor3 = MUTED
 status.Font = Enum.Font.Code
 status.TextSize = 10
 status.Parent = main
-
 -- Watermark
 local watermark = Instance.new("TextLabel")
-watermark.Size = UDim2.new(0, 180, 0, 16)
-watermark.Position = UDim2.new(0, 8, 1, -18)
+watermark.Size = UDim2.new(0,180,0,16)
+watermark.Position = UDim2.new(0,8,1,-18)
 watermark.BackgroundTransparency = 1
 watermark.Text = "made by kojiro hub"
-watermark.TextColor3 = Color3.fromRGB(50, 50, 80)
+watermark.TextColor3 = Color3.fromRGB(50,50,80)
 watermark.Font = Enum.Font.Code
 watermark.TextSize = 10
 watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
-
--- Character setup
+-- Character
 local hrp
 local hum
-
 local function setupChar(char)
     hum = char:WaitForChild("Humanoid")
     hrp = char:WaitForChild("HumanoidRootPart")
 end
-
 if LocalPlayer.Character then
     setupChar(LocalPlayer.Character)
 end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    setupChar(char)
-end)
-
--- Bat logic
+LocalPlayer.CharacterAdded:Connect(setupChar)
+-- Bat
 local hittingCooldown = false
-
 local function getBat()
     local char = LocalPlayer.Character
-    if not char then return nil end
-
+    if not char then return end
     local tool = char:FindFirstChild("Bat")
-
     if tool then
         return tool
     end
-
     local backpack = LocalPlayer:FindFirstChild("Backpack")
-
     if backpack then
         tool = backpack:FindFirstChild("Bat")
-
         if tool then
             tool.Parent = char
             return tool
         end
     end
-
-    return nil
 end
-
 local function tryHitBat()
     if hittingCooldown then return end
-
     hittingCooldown = true
-
     pcall(function()
         local bat = getBat()
-
         if bat then
             bat:Activate()
-
             local remote = bat:FindFirstChildWhichIsA("RemoteEvent")
-
             if remote then
                 remote:FireServer()
             end
         end
     end)
-
     task.delay(0.08, function()
         hittingCooldown = false
     end)
 end
-
 local function getClosestPlayer()
     if not hrp then return nil, math.huge end
-
     local closest
     local distance = math.huge
-
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-
             local enemyHRP = player.Character:FindFirstChild("HumanoidRootPart")
             local enemyHum = player.Character:FindFirstChild("Humanoid")
-
             if enemyHRP and enemyHum and enemyHum.Health > 0 then
                 local dist = (hrp.Position - enemyHRP.Position).Magnitude
-
                 if dist < distance then
                     distance = dist
                     closest = player
@@ -327,108 +255,83 @@ local function getClosestPlayer()
             end
         end
     end
-
     return closest, distance
 end
-
--- Body trace
+-- Body trace FIXED
 local bodyTraceEnabled = false
 local bodyTraceConn
-
 local function disableBodyTrace()
     if bodyTraceConn then
         bodyTraceConn:Disconnect()
         bodyTraceConn = nil
     end
-
     if hum then
         hum.AutoRotate = true
     end
 end
-
 local function enableBodyTrace()
     disableBodyTrace()
-
     if not hrp or not hum then
         return
     end
-
     hum.AutoRotate = false
-
     bodyTraceConn = RunService.RenderStepped:Connect(function()
         if not bodyTraceEnabled then
             return
         end
-
         local target = getClosestPlayer()
-
         if target and target.Character then
             local enemyHRP = target.Character:FindFirstChild("HumanoidRootPart")
-
             if enemyHRP then
-                local lookPos = Vector3.new(
-                    enemyHRP.Position.X,
-                    hrp.Position.Y,
-                    enemyHRP.Position.Z
-                )
-
-                local goal = CFrame.lookAt(hrp.Position, lookPos)
-
-                hrp.CFrame = hrp.CFrame:Lerp(goal, 0.15)
+                local direction = (
+                    Vector3.new(
+                        enemyHRP.Position.X,
+                        hrp.Position.Y,
+                        enemyHRP.Position.Z
+                    ) - hrp.Position
+                ).Unit
+                -- SAFE ROTATION METHOD
+                hum:Move(direction, false)
             end
         end
     end)
 end
-
 -- States
 local autoBatEnabled = false
-
--- Toggle visuals
 local function setToggle(ui, enabled)
     if enabled then
         tw(ui.Track, fast, {
             BackgroundColor3 = ACCENT
         })
-
         tw(ui.Knob, fast, {
-            Position = UDim2.new(1, -17, 0.5, -7),
+            Position = UDim2.new(1,-17,0.5,-7),
             BackgroundColor3 = WHITE
         })
-
         tw(ui.Label, fast, {
             TextColor3 = WHITE
         })
-
         tw(ui.Stroke, fast, {
             Transparency = 0.2
         })
-
     else
         tw(ui.Track, fast, {
-            BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+            BackgroundColor3 = Color3.fromRGB(30,30,50)
         })
-
         tw(ui.Knob, fast, {
-            Position = UDim2.new(0, 3, 0.5, -7),
+            Position = UDim2.new(0,3,0.5,-7),
             BackgroundColor3 = MUTED
         })
-
         tw(ui.Label, fast, {
             TextColor3 = MUTED
         })
-
         tw(ui.Stroke, fast, {
             Transparency = 0.7
         })
     end
 end
-
--- Auto bat toggle
 local function setBatEnabled(state)
     autoBatEnabled = state
-
-    setToggle(autoBatUI, state)
-
+    setToggle(autoUI, state)
     if state then
         status.Text = "Auto Bat: ON"
         status.TextColor3 = GREEN
@@ -436,23 +339,18 @@ local function setBatEnabled(state)
     else
         status.Text = "Auto Bat: OFF"
         status.TextColor3 = MUTED
-        dot.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        dot.BackgroundColor3 = Color3.fromRGB(60,60,80)
     end
 end
-
--- Body trace toggle
 local function setTraceEnabled(state)
     bodyTraceEnabled = state
-
-    setToggle(bodyTraceUI, state)
-
+    setToggle(traceUI, state)
     if state then
         status.Text = "Body Trace: ON"
         status.TextColor3 = ACCENT
         enableBodyTrace()
     else
         disableBodyTrace()
-
         if autoBatEnabled then
             status.Text = "Auto Bat: ON"
             status.TextColor3 = GREEN
@@ -462,38 +360,30 @@ local function setTraceEnabled(state)
         end
     end
 end
-
--- Clicks
-autoBatUI.Button.MouseButton1Click:Connect(function()
+-- Toggle clicks
+autoUI.Button.MouseButton1Click:Connect(function()
     setBatEnabled(not autoBatEnabled)
 end)
-
-bodyTraceUI.Button.MouseButton1Click:Connect(function()
+traceUI.Button.MouseButton1Click:Connect(function()
     setTraceEnabled(not bodyTraceEnabled)
 end)
-
--- Auto bat loop
+-- Auto bat
 RunService.Heartbeat:Connect(function()
     if not autoBatEnabled then
         return
     end
-
     local target, dist = getClosestPlayer()
-
     if target and dist <= DETECT_RANGE then
         tryHitBat()
     end
 end)
-
--- Re-enable body trace after respawn
+-- Respawn fix
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
-
     if bodyTraceEnabled then
         enableBodyTrace()
     end
 end)
-
 -- Glow animation
 task.spawn(function()
     while true do
@@ -507,9 +397,7 @@ task.spawn(function()
                 Transparency = autoBatEnabled and 0.05 or 0.55
             }
         )
-
         task.wait(1.5)
-
         tw(mainStroke,
             TweenInfo.new(
                 1.5,
@@ -520,7 +408,6 @@ task.spawn(function()
                 Transparency = autoBatEnabled and 0.3 or 0.7
             }
         )
-
         task.wait(1.5)
     end
 end)
