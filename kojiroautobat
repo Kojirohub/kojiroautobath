@@ -246,11 +246,14 @@ watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
 
 -- ============================================================
--- BAT LOGIC
+-- CHARACTER SETUP
 -- ============================================================
-local hittingCooldown = false
 local hrp = nil
 local h = nil
+local hittingCooldown = false
+local lastHitTime = 0
+local hitsThisSecond = 0
+local hitsWindowStart = tick()
 
 local function setupChar(char)
     h = char:WaitForChild("Humanoid")
@@ -260,6 +263,9 @@ end
 LocalPlayer.CharacterAdded:Connect(setupChar)
 if LocalPlayer.Character then setupChar(LocalPlayer.Character) end
 
+-- ============================================================
+-- BAT LOGIC (safe - randomized, rate limited, velocity check)
+-- ============================================================
 local function getBat()
     local char = LocalPlayer.Character
     if not char then return nil end
@@ -275,7 +281,24 @@ end
 
 local function tryHitBat()
     if hittingCooldown then return end
+
+    -- rate limit: max 8 hits per second like a real player
+    local now = tick()
+    if now - hitsWindowStart >= 1 then
+        hitsWindowStart = now
+        hitsThisSecond = 0
+    end
+    if hitsThisSecond >= 8 then return end
+
+    -- only swing if actually moving toward target
+    if hrp then
+        local speed = hrp.AssemblyLinearVelocity.Magnitude
+        if speed < 2 then return end
+    end
+
     hittingCooldown = true
+    hitsThisSecond = hitsThisSecond + 1
+
     pcall(function()
         local bat = getBat()
         if bat then
@@ -284,7 +307,10 @@ local function tryHitBat()
             if ev then ev:FireServer() end
         end
     end)
-    task.delay(0.08, function() hittingCooldown = false end)
+
+    -- randomized cooldown between 0.07 and 0.13 seconds
+    local randomDelay = math.random(70, 130) / 1000
+    task.delay(randomDelay, function() hittingCooldown = false end)
 end
 
 local function getClosestPlayer()
@@ -303,7 +329,7 @@ local function getClosestPlayer()
 end
 
 -- ============================================================
--- BODY TRACE LOGIC
+-- BODY TRACE LOGIC (subtle - lerp instead of instant snap)
 -- ============================================================
 local bodyTraceEnabled = false
 local bodyTraceConn = nil
@@ -332,6 +358,8 @@ local function getNearestPlayer()
     return nearest
 end
 
+local currentLookCF = nil
+
 local function enableBodyTrace()
     local char = LocalPlayer.Character
     if not char then return end
@@ -345,12 +373,14 @@ local function enableBodyTrace()
     lookAlign = Instance.new("AlignOrientation")
     lookAlign.Attachment0 = lookAttach
     lookAlign.Mode = Enum.OrientationAlignmentMode.OneAttachment
-    lookAlign.RigidityEnabled = true
-    lookAlign.MaxTorque = math.huge
-    lookAlign.Responsiveness = 200
+    lookAlign.RigidityEnabled = false
+    lookAlign.MaxTorque = 15000
+    lookAlign.Responsiveness = 12
     lookAlign.Parent = root
 
-    bodyTraceConn = RunService.RenderStepped:Connect(function()
+    currentLookCF = root.CFrame
+
+    bodyTraceConn = RunService.RenderStepped:Connect(function(dt)
         if not bodyTraceEnabled then return end
         local c = LocalPlayer.Character
         if not c then return end
@@ -361,10 +391,18 @@ local function enableBodyTrace()
             if lookAlign then lookAlign.Enabled = false end
             return
         end
+        -- smooth lerp toward target instead of instant snap
         local lookPos = Vector3.new(target.Position.X, r.Position.Y, target.Position.Z)
+        local targetCF = CFrame.lookAt(r.Position, lookPos)
+        -- lerp speed 0.08 makes it look very natural
+        if currentLookCF then
+            currentLookCF = currentLookCF:Lerp(targetCF, 0.08)
+        else
+            currentLookCF = targetCF
+        end
         if lookAlign then
             lookAlign.Enabled = true
-            lookAlign.CFrame = CFrame.lookAt(r.Position, lookPos)
+            lookAlign.CFrame = currentLookCF
         end
     end)
 end
@@ -373,6 +411,7 @@ local function disableBodyTrace()
     if bodyTraceConn then bodyTraceConn:Disconnect(); bodyTraceConn = nil end
     if lookAlign then lookAlign:Destroy(); lookAlign = nil end
     if lookAttach then lookAttach:Destroy(); lookAttach = nil end
+    currentLookCF = nil
     local char = LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
