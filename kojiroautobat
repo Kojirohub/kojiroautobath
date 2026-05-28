@@ -150,9 +150,8 @@ track.Position = UDim2.new(1, -46, 0.5, -10)
 track.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
 track.BorderSizePixel = 0
 track.ZIndex = 6
-track.Parent = track
-Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 track.Parent = toggle
+Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 
 local knob = Instance.new("Frame")
 knob.Size = UDim2.new(0, 14, 0, 14)
@@ -247,7 +246,7 @@ watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
 
 -- ============================================================
--- BAT LOGIC 
+-- BAT LOGIC
 -- ============================================================
 local hittingCooldown = false
 local hrp = nil
@@ -276,7 +275,6 @@ end
 
 local function tryHitBat()
     if hittingCooldown then return end
-    if not autoBatEnabled then return end
     hittingCooldown = true
     pcall(function()
         local bat = getBat()
@@ -295,8 +293,7 @@ local function getClosestPlayer()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             local tr = p.Character:FindFirstChild("HumanoidRootPart")
-            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            if tr and hum and hum.Health > 0 then
+            if tr then
                 local d = (hrp.Position - tr.Position).Magnitude
                 if d < cd then cd = d cp = p end
             end
@@ -306,12 +303,11 @@ local function getClosestPlayer()
 end
 
 -- ============================================================
--- SMOOTH BODY TRACE LOGIC
+-- BODY TRACE LOGIC (Lerp Smoothing)
 -- ============================================================
 local bodyTraceEnabled = false
 local bodyTraceConn = nil
-local lookAttach = nil
-local lookAlign = nil
+local ROTATION_SPEED = 0.15 
 
 local function getNearestPlayer()
     local char = LocalPlayer.Character
@@ -342,45 +338,19 @@ local function enableBodyTrace()
     local hum = char:WaitForChild("Humanoid")
     hum.AutoRotate = false
 
-    lookAttach = Instance.new("Attachment")
-    lookAttach.Parent = root
-
-    lookAlign = Instance.new("AlignOrientation")
-    lookAlign.Attachment0 = lookAttach
-    lookAlign.Mode = Enum.OrientationAlignmentMode.OneAttachment
-    
-    -- Smooth settings instead of instant locking:
-    lookAlign.RigidityEnabled = false
-    lookAlign.MaxTorque = 1500000 -- Strong enough to rotate, weak enough to blend
-    lookAlign.MaxAngularVelocity = 25 -- Human-like speed limit (decrease to slow down tracking)
-    lookAlign.Responsiveness = 18 -- Elastic damping feel (higher = snappier, lower = smoother)
-    lookAlign.Parent = root
-
-    bodyTraceConn = RunService.RenderStepped:Connect(function()
+    bodyTraceConn = RunService.RenderStepped:Connect(function(dt)
         if not bodyTraceEnabled then return end
-        local c = LocalPlayer.Character
-        if not c then return end
-        local r = c:FindFirstChild("HumanoidRootPart")
-        if not r then return end
-        
         local target = getNearestPlayer()
-        if not target then
-            if lookAlign then lookAlign.Enabled = false end
-            return
-        end
-        
-        local lookPos = Vector3.new(target.Position.X, r.Position.Y, target.Position.Z)
-        if lookAlign then
-            lookAlign.Enabled = true
-            lookAlign.CFrame = CFrame.lookAt(r.Position, lookPos)
-        end
+        if not target then return end
+
+        local targetPos = Vector3.new(target.Position.X, root.Position.Y, target.Position.Z)
+        local lookCFrame = CFrame.lookAt(root.Position, targetPos)
+        root.CFrame = root.CFrame:Lerp(lookCFrame, ROTATION_SPEED)
     end)
 end
 
 local function disableBodyTrace()
     if bodyTraceConn then bodyTraceConn:Disconnect(); bodyTraceConn = nil end
-    if lookAlign then lookAlign:Destroy(); lookAlign = nil end
-    if lookAttach then lookAttach:Destroy(); lookAttach = nil end
     local char = LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
@@ -391,7 +361,7 @@ end
 -- ============================================================
 -- AUTO BAT HEARTBEAT
 -- ============================================================
-autoBatEnabled = false
+local autoBatEnabled = false
 
 RunService.Heartbeat:Connect(function()
     if not autoBatEnabled then return end
