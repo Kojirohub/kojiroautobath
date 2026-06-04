@@ -6,30 +6,18 @@ local LocalPlayer = Players.LocalPlayer
 if not LocalPlayer then return end
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local DETECT_RANGE = 7
--- Remove old gui
 local old = PlayerGui:FindFirstChild("AutoBatGui")
-if old then
-    old:Destroy()
-end
--- Gui
+if old then old:Destroy() end
 local gui = Instance.new("ScreenGui")
 gui.Name = "AutoBatGui"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = PlayerGui
 print("Kojiro Hub Loaded")
--- Tween helper
 local function tw(obj, info, props)
-    if obj then
-        TweenService:Create(obj, info, props):Play()
-    end
+    if obj then TweenService:Create(obj, info, props):Play() end
 end
-local fast = TweenInfo.new(
-    0.15,
-    Enum.EasingStyle.Quint,
-    Enum.EasingDirection.Out
-)
--- Colors
+local fast = TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 local BG = Color3.fromRGB(8,8,14)
 local PANEL = Color3.fromRGB(14,14,24)
 local ACCENT = Color3.fromRGB(255,180,0)
@@ -37,7 +25,6 @@ local TEXT = Color3.fromRGB(230,230,255)
 local MUTED = Color3.fromRGB(120,120,160)
 local GREEN = Color3.fromRGB(40,220,120)
 local WHITE = Color3.fromRGB(255,255,255)
--- Main
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0,200,0,155)
 main.Position = UDim2.new(0.5,-100,0.5,-77)
@@ -52,7 +39,6 @@ mainStroke.Color = ACCENT
 mainStroke.Thickness = 1.2
 mainStroke.Transparency = 0.4
 mainStroke.Parent = main
--- Topbar
 local topbar = Instance.new("Frame")
 topbar.Size = UDim2.new(1,0,0,36)
 topbar.BackgroundColor3 = PANEL
@@ -82,7 +68,6 @@ title.TextColor3 = TEXT
 title.Font = Enum.Font.GothamBold
 title.TextSize = 11
 title.Parent = topbar
--- Dragging
 local dragging = false
 local dragInput
 local dragStart
@@ -117,7 +102,6 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
--- Toggle creator
 local function createToggle(y, text)
     local holder = Instance.new("Frame")
     holder.Size = UDim2.new(0,172,0,36)
@@ -161,17 +145,10 @@ local function createToggle(y, text)
     button.BackgroundTransparency = 1
     button.Text = ""
     button.Parent = holder
-    return {
-        Stroke = stroke,
-        Label = label,
-        Track = track,
-        Knob = knob,
-        Button = button
-    }
+    return {Stroke=stroke,Label=label,Track=track,Knob=knob,Button=button}
 end
 local autoUI = createToggle(42, "Auto Bat")
 local traceUI = createToggle(84, "Body Trace")
--- Status
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(0,172,0,22)
 status.Position = UDim2.new(0.5,-86,0,126)
@@ -181,7 +158,6 @@ status.TextColor3 = MUTED
 status.Font = Enum.Font.Code
 status.TextSize = 10
 status.Parent = main
--- Watermark
 local watermark = Instance.new("TextLabel")
 watermark.Size = UDim2.new(0,180,0,16)
 watermark.Position = UDim2.new(0,8,1,-18)
@@ -192,26 +168,20 @@ watermark.Font = Enum.Font.Code
 watermark.TextSize = 10
 watermark.TextXAlignment = Enum.TextXAlignment.Left
 watermark.Parent = main
--- Character
 local hrp
 local hum
 local function setupChar(char)
     hum = char:WaitForChild("Humanoid")
     hrp = char:WaitForChild("HumanoidRootPart")
 end
-if LocalPlayer.Character then
-    setupChar(LocalPlayer.Character)
-end
+if LocalPlayer.Character then setupChar(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(setupChar)
--- Bat
 local hittingCooldown = false
 local function getBat()
     local char = LocalPlayer.Character
     if not char then return end
     local tool = char:FindFirstChild("Bat")
-    if tool then
-        return tool
-    end
+    if tool then return tool end
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     if backpack then
         tool = backpack:FindFirstChild("Bat")
@@ -229,14 +199,10 @@ local function tryHitBat()
         if bat then
             bat:Activate()
             local remote = bat:FindFirstChildWhichIsA("RemoteEvent")
-            if remote then
-                remote:FireServer()
-            end
+            if remote then remote:FireServer() end
         end
     end)
-    task.delay(0.08, function()
-        hittingCooldown = false
-    end)
+    task.delay(0.08, function() hittingCooldown = false end)
 end
 local function getClosestPlayer()
     if not hrp then return nil, math.huge end
@@ -257,76 +223,70 @@ local function getClosestPlayer()
     end
     return closest, distance
 end
--- Body trace FIXED
+
+-- Human-like body trace
 local bodyTraceEnabled = false
 local bodyTraceConn
+local currentYaw = 0 -- tracks current facing angle smoothly
+
 local function disableBodyTrace()
     if bodyTraceConn then
         bodyTraceConn:Disconnect()
         bodyTraceConn = nil
     end
-    if hum then
-        hum.AutoRotate = true
-    end
+    if hum then hum.AutoRotate = true end
 end
+
 local function enableBodyTrace()
     disableBodyTrace()
-    if not hrp or not hum then
-        return
-    end
+    if not hrp or not hum then return end
     hum.AutoRotate = false
-    bodyTraceConn = RunService.RenderStepped:Connect(function()
-        if not bodyTraceEnabled then
-            return
-        end
+    -- start yaw from current facing
+    currentYaw = math.deg(select(2, hrp.CFrame:ToEulerAnglesYXZ()))
+    bodyTraceConn = RunService.RenderStepped:Connect(function(dt)
+        if not bodyTraceEnabled then return end
+        if not hrp or not hrp.Parent then return end
         local target = getClosestPlayer()
-        if target and target.Character then
-            local enemyHRP = target.Character:FindFirstChild("HumanoidRootPart")
-            if enemyHRP then
-                local direction = (
-                    Vector3.new(
-                        enemyHRP.Position.X,
-                        hrp.Position.Y,
-                        enemyHRP.Position.Z
-                    ) - hrp.Position
-                ).Unit
-                -- SAFE ROTATION METHOD
-                hum:Move(direction, false)
-            end
+        if not target or not target.Character then return end
+        local enemyHRP = target.Character:FindFirstChild("HumanoidRootPart")
+        if not enemyHRP then return end
+
+        -- get angle to target
+        local diff = enemyHRP.Position - hrp.Position
+        local targetYaw = math.deg(math.atan2(-diff.X, -diff.Z))
+
+        -- wrap angle difference to -180/180
+        local delta = ((targetYaw - currentYaw + 180) % 360) - 180
+
+        -- human-like: slightly random turn speed + small lag
+        local humanSpeed = 80 + math.random(-8, 8) -- degrees per second, slightly random
+        local maxTurn = humanSpeed * dt
+
+        -- clamp so it never snaps
+        if math.abs(delta) < maxTurn then
+            currentYaw = targetYaw
+        else
+            currentYaw = currentYaw + math.sign(delta) * maxTurn
         end
+
+        -- apply rotation without affecting position
+        local pos = hrp.Position
+        hrp.CFrame = CFrame.new(pos) * CFrame.Angles(0, math.rad(currentYaw), 0)
     end)
 end
--- States
+
 local autoBatEnabled = false
 local function setToggle(ui, enabled)
     if enabled then
-        tw(ui.Track, fast, {
-            BackgroundColor3 = ACCENT
-        })
-        tw(ui.Knob, fast, {
-            Position = UDim2.new(1,-17,0.5,-7),
-            BackgroundColor3 = WHITE
-        })
-        tw(ui.Label, fast, {
-            TextColor3 = WHITE
-        })
-        tw(ui.Stroke, fast, {
-            Transparency = 0.2
-        })
+        tw(ui.Track, fast, {BackgroundColor3 = ACCENT})
+        tw(ui.Knob, fast, {Position = UDim2.new(1,-17,0.5,-7), BackgroundColor3 = WHITE})
+        tw(ui.Label, fast, {TextColor3 = WHITE})
+        tw(ui.Stroke, fast, {Transparency = 0.2})
     else
-        tw(ui.Track, fast, {
-            BackgroundColor3 = Color3.fromRGB(30,30,50)
-        })
-        tw(ui.Knob, fast, {
-            Position = UDim2.new(0,3,0.5,-7),
-            BackgroundColor3 = MUTED
-        })
-        tw(ui.Label, fast, {
-            TextColor3 = MUTED
-        })
-        tw(ui.Stroke, fast, {
-            Transparency = 0.7
-        })
+        tw(ui.Track, fast, {BackgroundColor3 = Color3.fromRGB(30,30,50)})
+        tw(ui.Knob, fast, {Position = UDim2.new(0,3,0.5,-7), BackgroundColor3 = MUTED})
+        tw(ui.Label, fast, {TextColor3 = MUTED})
+        tw(ui.Stroke, fast, {Transparency = 0.7})
     end
 end
 local function setBatEnabled(state)
@@ -360,54 +320,30 @@ local function setTraceEnabled(state)
         end
     end
 end
--- Toggle clicks
 autoUI.Button.MouseButton1Click:Connect(function()
     setBatEnabled(not autoBatEnabled)
 end)
 traceUI.Button.MouseButton1Click:Connect(function()
     setTraceEnabled(not bodyTraceEnabled)
 end)
--- Auto bat
 RunService.Heartbeat:Connect(function()
-    if not autoBatEnabled then
-        return
-    end
+    if not autoBatEnabled then return end
     local target, dist = getClosestPlayer()
     if target and dist <= DETECT_RANGE then
         tryHitBat()
     end
 end)
--- Respawn fix
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
-    if bodyTraceEnabled then
-        enableBodyTrace()
-    end
+    if bodyTraceEnabled then enableBodyTrace() end
 end)
--- Glow animation
 task.spawn(function()
     while true do
-        tw(mainStroke,
-            TweenInfo.new(
-                1.5,
-                Enum.EasingStyle.Sine,
-                Enum.EasingDirection.InOut
-            ),
-            {
-                Transparency = autoBatEnabled and 0.05 or 0.55
-            }
-        )
+        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+            {Transparency = autoBatEnabled and 0.05 or 0.55})
         task.wait(1.5)
-        tw(mainStroke,
-            TweenInfo.new(
-                1.5,
-                Enum.EasingStyle.Sine,
-                Enum.EasingDirection.InOut
-            ),
-            {
-                Transparency = autoBatEnabled and 0.3 or 0.7
-            }
-        )
+        tw(mainStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+            {Transparency = autoBatEnabled and 0.3 or 0.7})
         task.wait(1.5)
     end
 end)
